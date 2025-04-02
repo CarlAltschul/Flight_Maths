@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Aerospace Calculators</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #00295c;
+            color: #00295c;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .calculator {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px auto;
+        }
+        input[type="number"] {
+            width: 120px;
+            padding: 5px;
+            margin: 5px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #a3bddb;
+            color: #ffe800;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .result {
+            font-weight: bold;
+            background-color: #a3bddb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            text-align: center;
+            min-width: 200px;
+        }
+        .convert-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .input-group label {
+            min-width: 140px;
+            text-align: right;
+            margin-right: 10px;
+        }
+        #clearButton {
+            background: #ff6b6b;
+            margin-top: 20px;
+        }
+        .recommendation {
+            margin-top: 10px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: #ffe800;">Real-Time Aerospace Calculators</h1>
+
+    <!-- Unit Converter -->
+    <div class="calculator">
+        <h2 style="color: #00295c;">Unit Converter</h2>
+        
+        <div class="convert-group">
+            <label>Inches:</label>
+            <input type="number" id="inches" oninput="convertInches()">
+            <div class="result" id="mmResult">0 mm</div>
+        </div>
+        
+        <div class="convert-group">
+            <label>In² to mm²:</label>
+            <input type="number" id="sqInches" oninput="convertSquareInches()">
+            <div class="result" id="sqMmResult">0 mm²</div>
+            <button onclick="populateArea()">Populate Wing Area</button>
+        </div>
+        
+        <div class="convert-group">
+            <label>Pounds:</label>
+            <input type="number" id="pounds" oninput="convertPounds()">
+            <div class="result" id="gramsResult">0 grams</div>
+            <button onclick="populateWeight()">Populate Weight</button>
+        </div>
+
+        <div class="convert-group">
+            <label>mm² to dm²:</label>
+            <input type="number" id="sqMmToDm" oninput="convertSquareMmToDm()">
+            <div class="result" id="sqDmResult">0 dm²</div>
+            <button onclick="populateAreaDm()">Populate Wing Area</button>
+        </div>
+    </div>
+
+    <!-- Area Calculator -->
+    <div class="calculator">
+        <h2 style="color: #00295c;">Area Calculator</h2>
+        <div class="input-group">
+            <label>Length (mm):</label>
+            <input type="number" id="length" oninput="updateAreaResult()">
+        </div>
+        <div class="input-group">
+            <label>Width (mm):</label>
+            <input type="number" id="width" oninput="updateAreaResult()">
+        </div>
+        <div class="input-group">
+            <button onclick="populateWingArea()">Populate Wing Area</button>
+            <button onclick="convertAndPopulateDm()">Convert to dm² and Populate</button>
+        </div>
+        <div class="result" id="areaResult">Area: 0 mm²</div>
+    </div>
+
+    <!-- Wing Loading Calculator -->
+    <div class="calculator">
+        <h2 style="color: #00295c;">Wing Loading Calculator</h2>
+        <div class="input-group">
+            <label>Weight (grams):</label>
+            <input type="number" id="weight" oninput="updateWingLoading()">
+        </div>
+        <div class="input-group">
+            <label>Area <span id="areaUnitLabel">(mm²)</span>:</label>
+            <input type="number" id="area" oninput="updateWingLoading()">
+        </div>
+        <input type="hidden" id="areaUnit" value="mm">
+        <div class="result" id="wingLoadingResult">Wing Loading: 0 g/mm² (0.0 oz/sq.ft)</div>
+        <div class="recommendation" id="recommendation"></div>
+    </div>
+
+    <button id="clearButton" onclick="clearAll()">Clear All</button>
+
+<script>
+// Real-time calculation functions
+function updateAreaResult() {
+    const length = parseFloat(document.getElementById('length').value) || 0;
+    const width = parseFloat(document.getElementById('width').value) || 0;
+    const area = length * width;
+    document.getElementById('areaResult').textContent = `Area: ${area.toLocaleString()} mm²`;
+}
+
+function updateWingLoading() {
+    const weight = parseFloat(document.getElementById('weight').value) || 0;
+    let area = parseFloat(document.getElementById('area').value) || 0;
+    const unit = document.getElementById('areaUnit').value;
+
+    // Convert to mm² if necessary
+    if (unit === 'dm') {
+        area *= 10000;
+    }
+
+    if (area === 0) {
+        document.getElementById('wingLoadingResult').textContent = 'Wing Loading: 0 g/mm² (0.0 oz/sq.ft)';
+        document.getElementById('recommendation').textContent = '';
+        return;
+    }
+    
+    const loading_g_mm2 = weight / area;
+    const oz_sqft = loading_g_mm2 * 3278.68; // Conversion factor g/mm² to oz/sq.ft
+    let recommendation = '';
+    
+    if (oz_sqft < 10) {
+        recommendation = 'Too low for most models';
+    } else if (oz_sqft <= 15) {
+        recommendation = 'Ideal for Gliders';
+    } else if (oz_sqft <= 20) {
+        recommendation = 'Good for Trainers';
+    } else if (oz_sqft <= 25) {
+        recommendation = 'Suitable for Sport Models';
+    } else if (oz_sqft <= 35) {
+        recommendation = 'Appropriate for High-Speed Models';
+    } else {
+        recommendation = 'Too high for hand-launched models';
+    }
+    
+    document.getElementById('wingLoadingResult').innerHTML = 
+        `Wing Loading: ${loading_g_mm2.toFixed(4)} g/mm² (${oz_sqft.toFixed(1)} oz/sq.ft)`;
+    document.getElementById('recommendation').textContent = `Recommendation: ${recommendation}`;
+}
+
+// Unit converters with real-time updates
+function convertInches() {
+    const inches = parseFloat(document.getElementById('inches').value) || 0;
+    const mm = inches * 25.4;
+    document.getElementById('mmResult').textContent = `${mm.toLocaleString()} mm`;
+}
+
+function convertSquareInches() {
+    const sqInches = parseFloat(document.getElementById('sqInches').value) || 0;
+    const sqMm = sqInches * 645.16;
+    document.getElementById('sqMmResult').textContent = `${sqMm.toLocaleString()} mm²`;
+}
+
+function convertPounds() {
+    const pounds = parseFloat(document.getElementById('pounds').value) || 0;
+    const grams = pounds * 453.592;
+    document.getElementById('gramsResult').textContent = `${grams.toLocaleString()} grams`;
+}
+
+function convertSquareMmToDm() {
+    const sqMm = parseFloat(document.getElementById('sqMmToDm').value) || 0;
+    const sqDm = sqMm / 10000;
+    document.getElementById('sqDmResult').textContent = `${sqDm.toLocaleString()} dm²`;
+}
+
+// Populate functions
+function populateWingArea() {
+    const areaText = document.getElementById('areaResult').textContent;
+    const areaValue = parseFloat(areaText.split(' ')[1].replace(/,/g, '')) || 0;
+    document.getElementById('area').value = areaValue;
+    document.getElementById('areaUnit').value = 'mm';
+    document.getElementById('areaUnitLabel').textContent = '(mm²)';
+    updateWingLoading();
+}
+
+function populateArea() {
+    const sqMmText = document.getElementById('sqMmResult').textContent;
+    const sqMmValue = parseFloat(sqMmText.split(' ')[0].replace(/,/g, '')) || 0;
+    document.getElementById('area').value = sqMmValue;
+    document.getElementById('areaUnit').value = 'mm';
+    document.getElementById('areaUnitLabel').textContent = '(mm²)';
+    updateWingLoading();
+}
+
+function populateAreaDm() {
+    const sqDmText = document.getElementById('sqDmResult').textContent;
+    const sqDmValue = parseFloat(sqDmText.split(' ')[0].replace(/,/g, '')) || 0;
+    document.getElementById('area').value = sqDmValue;
+    document.getElementById('areaUnit').value = 'dm';
+    document.getElementById('areaUnitLabel').textContent = '(dm²)';
+    updateWingLoading();
+}
+
+function populateWeight() {
+    const gramsText = document.getElementById('gramsResult').textContent;
+    const gramsValue = parseFloat(gramsText.split(' ')[0].replace(/,/g, '')) || 0;
+    document.getElementById('weight').value = gramsValue;
+    updateWingLoading();
+}
+
+function convertAndPopulateDm() {
+    const areaText = document.getElementById('areaResult').textContent;
+    const areaMm = parseFloat(areaText.split(' ')[1].replace(/,/g, '')) || 0;
+    const areaDm = areaMm / 10000;
+    document.getElementById('area').value = areaDm;
+    document.getElementById('areaUnit').value = 'dm';
+    document.getElementById('areaUnitLabel').textContent = '(dm²)';
+    updateWingLoading();
+}
+
+// Clear all function
+function clearAll() {
+    document.querySelectorAll('input').forEach(input => input.value = '');
+    document.getElementById('areaResult').textContent = 'Area: 0 mm²';
+    document.getElementById('wingLoadingResult').textContent = 'Wing Loading: 0 g/mm² (0.0 oz/sq.ft)';
+    document.getElementById('recommendation').textContent = '';
+    document.getElementById('mmResult').textContent = '0 mm';
+    document.getElementById('sqMmResult').textContent = '0 mm²';
+    document.getElementById('gramsResult').textContent = '0 grams';
+    document.getElementById('sqDmResult').textContent = '0 dm²';
+    document.getElementById('areaUnit').value = 'mm';
+    document.getElementById('areaUnitLabel').textContent = '(mm²)';
+}
+</script>
+</body>
+</html>

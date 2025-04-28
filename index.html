@@ -141,6 +141,43 @@
         <div class="recommendation" id="recommendation"></div>
     </div>
 
+    <!-- Foam Density Calculator -->
+    <div class="calculator">
+        <h2 style="color: #00295c;">Foam Density Calculator</h2>
+        <h3 style="color: #00295c;">Sample Density</h3>
+        <div class="input-group">
+            <label>Weight (grams):</label>
+            <input type="number" id="foamWeight" oninput="calculateFoamDensity()">
+        </div>
+        <div class="input-group">
+            <label>Length (mm):</label>
+            <input type="number" id="foamLength" oninput="calculateFoamDensity()">
+        </div>
+        <div class="input-group">
+            <label>Width (mm):</label>
+            <input type="number" id="foamWidth" oninput="calculateFoamDensity()">
+        </div>
+        <div class="input-group">
+            <label>Height (mm):</label>
+            <input type="number" id="foamHeight" oninput="calculateFoamDensity()">
+        </div>
+        <div class="result" id="foamVolumeResult">Volume: 0 mm³ (0 cm³)</div>
+        <div class="result" id="foamDensityResult">Density: 0 g/cm³ (0 kg/m³)</div>
+        <div class="recommendation" id="foamTypeRecommendation"></div>
+        
+        <h3 style="color: #00295c; margin-top: 20px;">Model Weight Estimator</h3>
+        <div class="input-group">
+            <label>Model Volume (cm³):</label>
+            <input type="number" id="modelVolume" oninput="calculateModelWeight()">
+        </div>
+        <div class="input-group">
+            <label>Foam Density (g/cm³):</label>
+            <input type="number" id="modelDensity" oninput="calculateModelWeight()">
+            <button onclick="populateDensity()">Use Sample Density</button>
+        </div>
+        <div class="result" id="modelWeightResult">Estimated Weight: 0 grams (0 oz)</div>
+    </div>
+
     <button id="clearButton" onclick="clearAll()">Clear All</button>
 
 <script>
@@ -189,6 +226,47 @@ function updateWingLoading() {
     document.getElementById('wingLoadingResult').innerHTML = 
         `Wing Loading: ${loading_g_mm2.toFixed(4)} g/mm² (${oz_sqft.toFixed(1)} oz/sq.ft)`;
     document.getElementById('recommendation').textContent = `Recommendation: ${recommendation}`;
+}
+
+// Foam density calculator
+function calculateFoamDensity() {
+    const weight = parseFloat(document.getElementById('foamWeight').value) || 0;
+    const length = parseFloat(document.getElementById('foamLength').value) || 0;
+    const width = parseFloat(document.getElementById('foamWidth').value) || 0;
+    const height = parseFloat(document.getElementById('foamHeight').value) || 0;
+    
+    // Calculate volume in mm³ and convert to cm³
+    const volumeMm3 = length * width * height;
+    const volumeCm3 = volumeMm3 / 1000;
+    
+    // Calculate density in g/cm³ and kg/m³
+    const densityGCm3 = volumeCm3 > 0 ? weight / volumeCm3 : 0;
+    const densityKgM3 = densityGCm3 * 1000; // 1 g/cm³ = 1000 kg/m³
+    
+    // Display volume and density results
+    document.getElementById('foamVolumeResult').textContent = 
+        `Volume: ${volumeMm3.toLocaleString()} mm³ (${volumeCm3.toLocaleString()} cm³)`;
+    document.getElementById('foamDensityResult').textContent = 
+        `Density: ${densityGCm3.toFixed(3)} g/cm³ (${densityKgM3.toFixed(1)} kg/m³)`;
+    
+    // Provide foam type recommendation based on density
+    let foamTypeRecommendation = '';
+    if (densityGCm3 > 0) {
+        if (densityGCm3 < 0.020) {
+            foamTypeRecommendation = 'Ultra-light foam (e.g., Depron 1.5-2mm)';
+        } else if (densityGCm3 < 0.040) {
+            foamTypeRecommendation = 'Light foam (e.g., Standard Depron, XPS)';
+        } else if (densityGCm3 < 0.080) {
+            foamTypeRecommendation = 'Medium foam (e.g., EPP, EPS)';
+        } else if (densityGCm3 < 0.160) {
+            foamTypeRecommendation = 'Dense foam (e.g., EPO, EPP high-density)';
+        } else {
+            foamTypeRecommendation = 'Very dense foam (e.g., PU foam, XPS high-density)';
+        }
+    }
+    
+    document.getElementById('foamTypeRecommendation').textContent = 
+        foamTypeRecommendation ? `Foam Type: ${foamTypeRecommendation}` : '';
 }
 
 // Unit converters with real-time updates
@@ -261,6 +339,32 @@ function convertAndPopulateDm() {
     updateWingLoading();
 }
 
+// Model weight estimator function
+function calculateModelWeight() {
+    const volume = parseFloat(document.getElementById('modelVolume').value) || 0;
+    const density = parseFloat(document.getElementById('modelDensity').value) || 0;
+    
+    // Calculate weight in grams and ounces
+    const weightGrams = volume * density;
+    const weightOz = weightGrams * 0.03527396; // Convert grams to ounces
+    
+    // Display weight result
+    document.getElementById('modelWeightResult').textContent = 
+        `Estimated Weight: ${weightGrams.toFixed(1)} grams (${weightOz.toFixed(2)} oz)`;
+}
+
+// Populate density from sample function
+function populateDensity() {
+    const densityText = document.getElementById('foamDensityResult').textContent;
+    const densityMatch = densityText.match(/Density: ([\d.]+) g\/cm³/);
+    
+    if (densityMatch && densityMatch[1]) {
+        const densityValue = parseFloat(densityMatch[1]);
+        document.getElementById('modelDensity').value = densityValue;
+        calculateModelWeight();
+    }
+}
+
 // Clear all function
 function clearAll() {
     document.querySelectorAll('input').forEach(input => input.value = '');
@@ -273,6 +377,10 @@ function clearAll() {
     document.getElementById('sqDmResult').textContent = '0 dm²';
     document.getElementById('areaUnit').value = 'mm';
     document.getElementById('areaUnitLabel').textContent = '(mm²)';
+    document.getElementById('foamVolumeResult').textContent = 'Volume: 0 mm³ (0 cm³)';
+    document.getElementById('foamDensityResult').textContent = 'Density: 0 g/cm³ (0 kg/m³)';
+    document.getElementById('foamTypeRecommendation').textContent = '';
+    document.getElementById('modelWeightResult').textContent = 'Estimated Weight: 0 grams (0 oz)';
 }
 </script>
 </body>

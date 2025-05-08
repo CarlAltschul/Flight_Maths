@@ -172,6 +172,21 @@
         <div class="recommendation" id="foamTypeRecommendation"></div>
         
         <h3 style="color: #00295c; margin-top: 20px;">Model Weight Estimator</h3>
+        <!-- New Volume Converter Section -->
+        <h4 style="color: #00295c;">Volume Converter</h4>
+        <div class="convert-group">
+            <label>mm³:</label>
+            <input type="number" id="cubicMm" oninput="convertCubicMm()">
+            <div class="result" id="cubicCmResult">0 cm³</div>
+            <button onclick="populateModelVolume()">Populate Model Volume</button>
+        </div>
+        <div class="convert-group">
+            <label>cm³:</label>
+            <input type="number" id="cubicCm" oninput="convertCubicCm()">
+            <div class="result" id="cubicMmResult">0 mm³</div>
+            <button onclick="populateModelVolume()">Populate Model Volume</button>
+        </div>
+        <!-- End of New Volume Converter Section -->
         <div class="input-group">
             <label>Model Volume (cm³):</label>
             <input type="number" id="modelVolume" oninput="calculateModelWeight()">
@@ -179,13 +194,14 @@
         <div class="input-group">
             <label>Foam Density (g/cm³):</label>
             <input type="number" id="modelDensity" oninput="calculateModelWeight()">
-            <button onclick="populateDensity()">Use Sample Density</button>
+            <button onclick="populateDensity()">Use Default Density</button>
         </div>
         <div class="result" id="modelWeightResult">Estimated Weight: 0 grams (0 oz)</div>
     </div>
 
     <button id="clearButton" onclick="clearAll()">Clear All</button>
-      <div class="copyright">© 2025 Carl Altschul</div>
+
+    <div class="copyright">© 2025 Carl Altschul</div>
 
 <script>
 // Real-time calculation functions
@@ -301,6 +317,36 @@ function convertSquareMmToDm() {
     document.getElementById('sqDmResult').textContent = `${sqDm.toLocaleString()} dm²`;
 }
 
+// New functions for cubic mm to cubic cm conversion
+function convertCubicMm() {
+    const cubicMm = parseFloat(document.getElementById('cubicMm').value) || 0;
+    const cubicCm = cubicMm / 1000;
+    document.getElementById('cubicCmResult').textContent = `${cubicCm.toLocaleString()} cm³`;
+}
+
+function convertCubicCm() {
+    const cubicCm = parseFloat(document.getElementById('cubicCm').value) || 0;
+    const cubicMm = cubicCm * 1000;
+    document.getElementById('cubicMmResult').textContent = `${cubicMm.toLocaleString()} mm³`;
+}
+
+function populateModelVolume() {
+    // Try to get value from cubic cm first
+    let volumeValue = 0;
+    const cubicCmText = document.getElementById('cubicCmResult').textContent;
+    volumeValue = parseFloat(cubicCmText.split(' ')[0].replace(/,/g, '')) || 0;
+    
+    // If no value from cubic cm, try cubic mm converted to cm
+    if (volumeValue === 0) {
+        const cubicMmText = document.getElementById('cubicMmResult').textContent;
+        const cubicMmValue = parseFloat(cubicMmText.split(' ')[0].replace(/,/g, '')) || 0;
+        volumeValue = cubicMmValue / 1000;
+    }
+    
+    document.getElementById('modelVolume').value = volumeValue;
+    calculateModelWeight();
+}
+
 // Populate functions
 function populateWingArea() {
     const areaText = document.getElementById('areaResult').textContent;
@@ -362,6 +408,13 @@ function calculateModelWeight() {
 
 // Populate density from sample function
 function populateDensity() {
+    // Set default density value to 0.040 g/cm³
+    document.getElementById('modelDensity').value = 0.040;
+    calculateModelWeight();
+}
+
+// Populate sample density from calculated density
+function populateSampleDensity() {
     const densityText = document.getElementById('foamDensityResult').textContent;
     const densityMatch = densityText.match(/Density: ([\d.]+) g\/cm³/);
     
@@ -387,6 +440,8 @@ function clearAll() {
     document.getElementById('foamVolumeResult').textContent = 'Volume: 0 mm³ (0 cm³)';
     document.getElementById('foamDensityResult').textContent = 'Density: 0 g/cm³ (0 kg/m³)';
     document.getElementById('foamTypeRecommendation').textContent = '';
+    document.getElementById('cubicCmResult').textContent = '0 cm³';
+    document.getElementById('cubicMmResult').textContent = '0 mm³';
     document.getElementById('modelWeightResult').textContent = 'Estimated Weight: 0 grams (0 oz)';
 }
 </script>
